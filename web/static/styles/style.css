@@ -1,0 +1,79 @@
+/* RESET */
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+  position: relative;
+  min-width: 0;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  max-height: 100dvh;
+  min-width: 100%;
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+label,
+text {
+  font-family: sans-serif;
+  text-wrap: balance;
+  margin-block-start: auto;
+  margin-block-end: auto;
+  margin-inline-start: auto;
+  margin-inline-end: auto;
+}
+
+a {
+  text-decoration: none;
+}
+
+p,
+a,
+span {
+  text-wrap: pretty;
+  font-family: sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 100%;
+}
+
+/* RESET */
+
+body {
+  width: 100dvw;
+  min-height: 100dvh;
+  & h1 {
+    margin: 0 auto;
+  }
+}
+
+.tablero {
+  display: grid;
+  grid-template-rows: repeat(3, 40px);
+  grid-template-columns: repeat(3, 40px);
+  & .celda {
+    border: solid 2px black;
+    & p {
+      font-size: 30px;
+      text-align: center;
+    }
+  }
+}
