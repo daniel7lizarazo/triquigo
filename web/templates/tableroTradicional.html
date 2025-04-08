@@ -1,0 +1,56 @@
+<!doctype html>
+
+{{ define "enjuego" }}
+
+<form class="tablero">
+  {{ range $indice, $valor := .TableroActual }} {{ if eq $valor ' ' }}
+
+  <input
+    type="submit"
+    formaction="/tradicional/{{$indice}}"
+    value="{{ printf `%c` $valor }}"
+  />
+
+  {{ else }}
+
+  <p class="celda">{{ printf "%c" $valor }}</p>
+
+  {{ end }} {{ end }}
+</form>
+
+{{ end }} {{ define "terminado" }}
+
+<form class="tablero">
+  {{ range $indice, $valor := .TableroActual }}
+
+  <p class="celda">{{ printf "%c" $valor }}</p>
+
+  {{ end }}
+</form>
+
+<a class="boton-resetear" href="/resetearTradicional">Volver a jugar</a>
+
+{{ end }}
+
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/static/styles/style.css" />
+  </head>
+
+  <body>
+    <h1>Triquigo</h1>
+
+    {{ if eq .Estado 0 }}
+    <h2 class="subtitulo">¡A JUGAR!</h2>
+
+    {{ template "enjuego" . }} {{ else if eq .Estado 1 }}
+    <h2 class="ganador">GANADOR</h2>
+    {{ template "terminado" . }} {{ else if eq .Estado 2 }}
+    <h2 class="perdedor">PERDEDOR</h2>
+
+    {{ template "terminado" . }} {{ else if eq .Estado 3 }}
+    <h2 class="empate">EMPATE</h2>
+
+    {{ template "terminado" . }} {{ end }}
+  </body>
+</html>

@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -13,12 +12,11 @@ import (
 //go:embed web/templates/*
 var htmlTemplates embed.FS
 
-var port = flag.String("addr", ":1718", "http service address")
-
 var t = template.Must(template.ParseFS(htmlTemplates, "web/templates/*"))
 
 type EstadoJuego int
 
+// Estado del juego
 const (
 	EnJuego = iota
 	Ganado
@@ -26,19 +24,27 @@ const (
 	Empate
 )
 
+// Modos de juego
+const (
+	Tradicional  = "tradicional"
+	Sincronizado = "sincronizado"
+)
+
 type EstadoTriqui struct {
-	TableroActual Tablero
-	Estado        EstadoJuego
-	TrioGanador   Trio
+	TableroActual  Tablero
+	Estado         EstadoJuego
+	ModoDeJuego    string
+	TableroGanador Tablero
 }
 
 var estadoTriqui = EstadoTriqui{
-	TableroActual: NuevoTablero(),
-	Estado:        EnJuego,
-	TrioGanador:   Trio{},
+	TableroActual:  NuevoTablero(),
+	Estado:         EnJuego,
+	ModoDeJuego:    Tradicional,
+	TableroGanador: NuevoTablero(),
 }
 
-func (tablero Tablero) ObtenerDisponibles() []int {
+func (tablero *Tablero) ObtenerDisponibles() []int {
 	disponibles := make([]int, 0, 9)
 	k := 0
 	for i := range tablero {
@@ -51,12 +57,29 @@ func (tablero Tablero) ObtenerDisponibles() []int {
 	return disponibles
 }
 
-func (tablero *Tablero) JugarCelda() {
+func (tablero *Tablero) ObtenerIndiceAleatorio() int {
 	disponibles := tablero.ObtenerDisponibles()
 	rangoDisponible := len(disponibles)
 	indiceCeldaDisponible := rand.Intn(rangoDisponible)
-	indiceCeldaAJugar := disponibles[indiceCeldaDisponible]
-	tablero[indiceCeldaAJugar] = O
+	return disponibles[indiceCeldaDisponible]
+}
+
+func (tablero *Tablero) ObtenerOrdenado() int {
+	for i := range tablero {
+		if tablero[i] == Vacio {
+			return i
+		}
+	}
+	return 0
+}
+
+func (tablero *Tablero) EliminarBloqueada() {
+	for i := range tablero {
+		if tablero[i] == Bloqueada {
+			tablero[i] = Vacio
+			break
+		}
+	}
 }
 
 // Los valores de rune del 48 al 57 corresponden a los numeros 0 al 9
@@ -75,81 +98,212 @@ func DigitoRune(s string) (int, error) {
 	return int(numero), nil
 }
 
-func main() {
+func tableroTradicionalHandler(w http.ResponseWriter, r *http.Request) {
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
+	if err := t.ExecuteTemplate(w, "tableroTradicional.html", estadoTriqui); err != nil {
+		log.Print(err.Error())
+	}
+}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func jugarTradicionalHandler(w http.ResponseWriter, r *http.Request) {
 
-		if err := t.ExecuteTemplate(w, "index.html", estadoTriqui); err != nil {
+	indice, err := DigitoRune(r.PathValue("indice"))
+
+	if err != nil {
+		return
+	}
+
+	estadoTriqui.TableroActual[indice] = X
+
+	_, ganador := estadoTriqui.TableroActual.EstablecerGanador()
+
+	if ganador == X {
+		estadoTriqui.Estado = Ganado
+
+		if err := t.ExecuteTemplate(w, "tableroTradicional.html", estadoTriqui); err != nil {
 			log.Print(err.Error())
 		}
 
-	})
+		return
+	}
 
-	http.HandleFunc("/{indice}", func(w http.ResponseWriter, r *http.Request) {
-		indice, err := DigitoRune(r.PathValue("indice"))
+	disponibles := estadoTriqui.TableroActual.ObtenerDisponibles()
 
-		if err != nil {
-			return
+	if len(disponibles) == 0 {
+		estadoTriqui.Estado = Empate
+
+		if err := t.ExecuteTemplate(w, "tableroTradicional.html", estadoTriqui); err != nil {
+			log.Print(err.Error())
 		}
 
-		estadoTriqui.TableroActual[indice] = X
+		return
+	}
 
-		resultadoTrio, ganador := estadoTriqui.TableroActual.EstablecerGanador()
+	celdaAJugar := estadoTriqui.TableroActual.ObtenerIndiceAleatorio()
+	estadoTriqui.TableroActual[celdaAJugar] = O
+	_, ganador = estadoTriqui.TableroActual.EstablecerGanador()
 
-		if ganador == X {
-			estadoTriqui.Estado = Ganado
-			estadoTriqui.TrioGanador = resultadoTrio
+	if ganador == O {
+		estadoTriqui.Estado = Perdido
 
-			if err := t.ExecuteTemplate(w, "index.html", estadoTriqui); err != nil {
-				log.Print(err.Error())
-			}
-
-			return
+		if err := t.ExecuteTemplate(w, "tableroTradicional.html", estadoTriqui); err != nil {
+			log.Print(err.Error())
 		}
 
-		disponibles := estadoTriqui.TableroActual.ObtenerDisponibles()
+		return
+	}
+
+	if err := t.ExecuteTemplate(w, "tableroTradicional.html", estadoTriqui); err != nil {
+		log.Print(err.Error())
+	}
+}
+
+func resetearTableroTradicionalHandler(w http.ResponseWriter, r *http.Request) {
+
+	estadoTriqui.TableroActual = NuevoTablero()
+	estadoTriqui.Estado = EnJuego
+	estadoTriqui.TableroGanador = NuevoTablero()
+
+	http.Redirect(w, r, "/tradicional", http.StatusFound)
+}
+
+func tableroSincronizadoHandler(w http.ResponseWriter, r *http.Request) {
+	if err := t.ExecuteTemplate(w, "tableroSincronizado.html", estadoTriqui); err != nil {
+		log.Print(err.Error())
+	}
+}
+
+func jugarSincronizadoHandler(w http.ResponseWriter, r *http.Request) {
+
+	indice, err := DigitoRune(r.PathValue("indice"))
+
+	if err != nil {
+		return
+	}
+
+	celdaAJugar := estadoTriqui.TableroActual.ObtenerIndiceAleatorio()
+	//celdaAJugar := estadoTriqui.TableroActual.ObtenerOrdenado()
+
+	estadoTriqui.TableroActual.EliminarBloqueada()
+
+	var disponibles []int
+
+	if indice == celdaAJugar {
+
+		estadoTriqui.TableroActual[indice] = Bloqueada
+
+		disponibles = estadoTriqui.TableroActual.ObtenerDisponibles()
 
 		if len(disponibles) == 0 {
 			estadoTriqui.Estado = Empate
 
-			if err := t.ExecuteTemplate(w, "index.html", estadoTriqui); err != nil {
+			if err := t.ExecuteTemplate(w, "tableroSincronizado.html", estadoTriqui); err != nil {
 				log.Print(err.Error())
 			}
 
 			return
 		}
 
-		estadoTriqui.TableroActual.JugarCelda()
-		resultadoTrio, ganador = estadoTriqui.TableroActual.EstablecerGanador()
-
-		if ganador == O {
-			estadoTriqui.Estado = Perdido
-			estadoTriqui.TrioGanador = resultadoTrio
-
-			if err := t.ExecuteTemplate(w, "index.html", estadoTriqui); err != nil {
-				log.Print(err.Error())
-			}
-
-			return
-		}
-
-		if err := t.ExecuteTemplate(w, "index.html", estadoTriqui); err != nil {
+		if err := t.ExecuteTemplate(w, "tableroSincronizado.html", estadoTriqui); err != nil {
 			log.Print(err.Error())
 		}
 
-	})
+		return
+	}
 
-	http.HandleFunc("/resetear", func(w http.ResponseWriter, r *http.Request) {
+	estadoTriqui.TableroActual[indice] = X
+	estadoTriqui.TableroActual[celdaAJugar] = O
 
-		estadoTriqui.TableroActual = NuevoTablero()
-		estadoTriqui.Estado = EnJuego
+	trioX, errX := estadoTriqui.TableroActual.EstablecerGanadorEsp(X)
+	trioO, errO := estadoTriqui.TableroActual.EstablecerGanadorEsp(O)
 
-		http.Redirect(w, r, "/", http.StatusFound)
+	// Empate porque ganaron al tiempo
+	if errX == nil && errO == nil {
+		estadoTriqui.TableroGanador.AgregarTrioSignos(trioX, X)
+		estadoTriqui.TableroGanador.AgregarTrioSignos(trioO, O)
+		estadoTriqui.TableroActual.VaciarTrioTablero(trioX)
+		estadoTriqui.TableroActual.VaciarTrioTablero(trioO)
 
-	})
+		if err := t.ExecuteTemplate(w, "tableroSincronizado.html", estadoTriqui); err != nil {
+			log.Print(err.Error())
+		}
 
-	log.Println("listening on", *port)
-	log.Fatal(http.ListenAndServe(*port, nil))
+		return
+	}
+
+	// Si ambas no son nil entonces alguna debe ser diferente de nil, probaremos cual si es nil para declarar el ganador
+	if errX == nil {
+		estadoTriqui.Estado = Ganado
+		estadoTriqui.TableroGanador.AgregarTrioSignos(trioX, X)
+
+		if err := t.ExecuteTemplate(w, "tableroSincronizado.html", estadoTriqui); err != nil {
+			log.Print(err.Error())
+		}
+
+		return
+	}
+	if errO == nil {
+		estadoTriqui.Estado = Perdido
+		estadoTriqui.TableroGanador.AgregarTrioSignos(trioO, O)
+
+		if err := t.ExecuteTemplate(w, "tableroSincronizado.html", estadoTriqui); err != nil {
+			log.Print(err.Error())
+		}
+
+		return
+	}
+
+	disponibles = estadoTriqui.TableroActual.ObtenerDisponibles()
+
+	if len(disponibles) == 0 {
+		estadoTriqui.Estado = Empate
+
+		if err := t.ExecuteTemplate(w, "tableroSincronizado.html", estadoTriqui); err != nil {
+			log.Print(err.Error())
+		}
+
+		return
+	}
+
+	if err := t.ExecuteTemplate(w, "tableroSincronizado.html", estadoTriqui); err != nil {
+		log.Print(err.Error())
+	}
+}
+
+func resetearTableroSincronizadoHandler(w http.ResponseWriter, r *http.Request) {
+
+	estadoTriqui.TableroActual = NuevoTablero()
+	estadoTriqui.Estado = EnJuego
+	estadoTriqui.TableroGanador = NuevoTablero()
+
+	http.Redirect(w, r, "/sincronizado", http.StatusFound)
+}
+
+func menuHandler(w http.ResponseWriter, r *http.Request) {
+	if err := t.Execute(w, "menu.html"); err != nil {
+		log.Print(err.Error())
+	}
+}
+
+func main() {
+
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static"))))
+
+	http.HandleFunc("/", menuHandler)
+
+	http.HandleFunc("/tradicional", tableroTradicionalHandler)
+
+	http.HandleFunc("/tradicional/{indice}", jugarTradicionalHandler)
+
+	http.HandleFunc("/resetearTradicional", resetearTableroTradicionalHandler)
+
+	http.HandleFunc("/sincronizado", tableroSincronizadoHandler)
+
+	http.HandleFunc("/sincronizado/{indice}", jugarSincronizadoHandler)
+
+	http.HandleFunc("/resetearSincronizado", resetearTableroSincronizadoHandler)
+
+	port := ":1718"
+	log.Println("listening on", port)
+	log.Fatal(http.ListenAndServe(port, nil))
 }
