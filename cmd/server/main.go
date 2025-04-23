@@ -1,9 +1,9 @@
 package main
 
 import (
-	"daniel7lizarazo/triquigo/tablero"
 	"embed"
 	"fmt"
+	"github.com/daniel7lizarazo/triquigo/pkg/tablero"
 	"html/template"
 	"log"
 	"math/rand"
