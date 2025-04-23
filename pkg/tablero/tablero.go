@@ -2,6 +2,7 @@ package tablero
 
 import (
 	"fmt"
+	"math/rand"
 )
 
 const (
@@ -17,6 +18,44 @@ type Trio [3]int
 
 type NoGanador struct {
 	Signo rune
+}
+
+func (t *Tablero) ObtenerDisponibles() []int {
+	disponibles := make([]int, 0, 9)
+	k := 0
+	for i := range t {
+		if t[i] != Vacio {
+			continue
+		}
+		disponibles = append(disponibles, i)
+		k++
+	}
+	return disponibles
+}
+
+func (tablero *Tablero) ObtenerIndiceAleatorio() int {
+	disponibles := tablero.ObtenerDisponibles()
+	rangoDisponible := len(disponibles)
+	indiceCeldaDisponible := rand.Intn(rangoDisponible)
+	return disponibles[indiceCeldaDisponible]
+}
+
+func (tablero *Tablero) ObtenerOrdenado() int {
+	for i := range tablero {
+		if tablero[i] == Vacio {
+			return i
+		}
+	}
+	return 0
+}
+
+func (tablero *Tablero) EliminarBloqueada() {
+	for i := range tablero {
+		if tablero[i] == Bloqueada {
+			tablero[i] = Vacio
+			break
+		}
+	}
 }
 
 func (noGanador *NoGanador) Error() string {
