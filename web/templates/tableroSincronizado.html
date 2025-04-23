@@ -1,13 +1,18 @@
-{{ define "enjuegoSinc" }}
+{{ define "enjuegoSinc" }} {{ $tableroGanador := .TableroGanador }}
 <form class="tablero">
   {{ range $indice, $valor := .TableroActual }} {{ if eq $valor ' ' }}
 
-  <input
-    type="submit"
-    formaction="/sincronizado/{{$indice}}"
-    value="{{ printf `%c` $valor }}"
-  />
-
+  <div class="multicelda">
+    <input
+      type="submit"
+      formaction="/sincronizado/{{$indice}}"
+      value="{{ printf `%c` $valor }}"
+    />
+    {{ $valorGanador := index $tableroGanador $indice }} {{ if ne $valorGanador
+    ' ' }}
+    <p class="celda celda-temporal">{{ printf "%c" $valorGanador }}</p>
+    {{ end }}
+  </div>
   {{ else }}
 
   <p class="celda">{{ printf "%c" $valor }}</p>
@@ -28,7 +33,7 @@
 
 {{ end }}
 
-<html lang="en">
+<html lang="es">
   <head>
     <link rel="stylesheet" href="/static/styles/style.css" />
   </head>

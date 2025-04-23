@@ -1,4 +1,4 @@
-package main
+package tablero
 
 import (
 	"fmt"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"daniel7lizarazo/triquigo/tablero"
 	"embed"
 	"fmt"
 	"html/template"
@@ -181,8 +182,10 @@ func jugarSincronizadoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	celdaAJugar := estadoTriqui.TableroActual.ObtenerIndiceAleatorio()
-	//celdaAJugar := estadoTriqui.TableroActual.ObtenerOrdenado()
+	estadoTriqui.TableroGanador = NuevoTablero()
+
+	// celdaAJugar := estadoTriqui.TableroActual.ObtenerIndiceAleatorio()
+	celdaAJugar := estadoTriqui.TableroActual.ObtenerOrdenado()
 
 	estadoTriqui.TableroActual.EliminarBloqueada()
 
