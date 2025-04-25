@@ -1,18 +1,16 @@
 package main
 
 import (
-	"embed"
 	"fmt"
 	"github.com/daniel7lizarazo/triquigo/pkg/tablero"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 )
 
-//go:embed web/templates/*
-var htmlTemplates embed.FS
-
-var t = template.Must(template.ParseFS(htmlTemplates, "web/templates/*"))
+var htmlTemplates = os.DirFS("web/templates")
+var t = template.Must(template.ParseFS(htmlTemplates, "*"))
 
 type EstadoJuego int
 

@@ -1,2 +1,4 @@
-github.com/daniel7lizarazo/triquigo/pkg/tablero v0.0.0-20250423192544-cd19661c4f04 h1:O8X6aR5GO9L5vHv3LGnB4548RVHc122/Xh+fIIAkwYc=
-github.com/daniel7lizarazo/triquigo/pkg/tablero v0.0.0-20250423192544-cd19661c4f04/go.mod h1:3/fH1Db+8Q61I5i7l4/VlGR1jDktY7gtoxOj/di4ppc=
+github.com/daniel7lizarazo/triquigo/pkg/tablero v0.0.0-20250423204843-dd2a257fa97f h1:v4uZXMvg8yMaBDm2nvSZOkosGwaZk3sX2cfi85i9nkA=
+github.com/daniel7lizarazo/triquigo/pkg/tablero v0.0.0-20250423204843-dd2a257fa97f/go.mod h1:3/fH1Db+8Q61I5i7l4/VlGR1jDktY7gtoxOj/di4ppc=
+github.com/daniel7lizarazo/triquigo/pkg/tablero v1.0.0 h1:ACX5GF4eQToqVQIdCerBRSQ18ek8SgBnvnIEqqClmgQ=
+github.com/daniel7lizarazo/triquigo/pkg/tablero v1.0.0/go.mod h1:3/fH1Db+8Q61I5i7l4/VlGR1jDktY7gtoxOj/di4ppc=

@@ -33,26 +33,26 @@ func (t *Tablero) ObtenerDisponibles() []int {
 	return disponibles
 }
 
-func (tablero *Tablero) ObtenerIndiceAleatorio() int {
-	disponibles := tablero.ObtenerDisponibles()
+func (t *Tablero) ObtenerIndiceAleatorio() int {
+	disponibles := t.ObtenerDisponibles()
 	rangoDisponible := len(disponibles)
 	indiceCeldaDisponible := rand.Intn(rangoDisponible)
 	return disponibles[indiceCeldaDisponible]
 }
 
-func (tablero *Tablero) ObtenerOrdenado() int {
-	for i := range tablero {
-		if tablero[i] == Vacio {
+func (t *Tablero) ObtenerOrdenado() int {
+	for i := range t {
+		if t[i] == Vacio {
 			return i
 		}
 	}
 	return 0
 }
 
-func (tablero *Tablero) EliminarBloqueada() {
-	for i := range tablero {
-		if tablero[i] == Bloqueada {
-			tablero[i] = Vacio
+func (t *Tablero) EliminarBloqueada() {
+	for i := range t {
+		if t[i] == Bloqueada {
+			t[i] = Vacio
 			break
 		}
 	}
